@@ -1,13 +1,21 @@
 
 Parity from codepen:
-  ☐ Text drag drop placement @started(22-12-08 15:34)
+  ✔ Text drag drop placement @started(22-12-08 15:34) @done(22-12-08 16:12) @lasted(38m33s)
 
+UX Improvements:
+  ☐ Clicking on text should be done via center of element
 
-New features:
+New features BIG:
   ☐ Perspective origin click to set
   ☐ New text + layer click to set
+  
+
+New features MEDIUM:
+  ☐ New Input: transform origin
+  ☐ 
 
 Text specific modifier bank:
   ☐ Line height
   ☐ font type
   ☐ font size
+  

@@ -1,54 +1,80 @@
+<!-- eslint-disable @typescript-eslint/no-non-null-assertion -->
 <template>
-  <div class="container">
-    <div id="img-wrapper" style="perspective: 100px">
+  <div class="main-container">
+    <div class="img-container">
       <img :src="currentImg" />
-      <span id="user-text" :style="getTextStyleObject" draggable="true"
-        >New<br />York</span
+      <div
+        class="working-layer"
+        :style="getImgWrapperStyleObject"
+        ref="workingLayer"
+        @dragover="allowDrop"
+        @drop="drop"
       >
+        <div
+          class="user-text"
+          :class="{ isDragging }"
+          ref="userText"
+          :style="getTextStyleObject"
+          draggable="true"
+          @dragstart="drag"
+          @mousedown="mousedown"
+        >
+          New<br />York
+        </div>
+      </div>
     </div>
     <div id="control-bank">
       <div class="input-group">
         <input
+          v-model="textTransforms.rotateY[0]"
           id="rotateY-control"
           name="rotateY"
           type="range"
-          min="0"
-          max="360"
+          min="-180"
+          max="180"
           step="1"
-          value="0"
         />
         <label id="rotateY-control-label" for="rotateY"
-          >RotateY (degrees): <span class="value-readout">0</span></label
+          >RotateY (degrees):
+          <span class="value-readout">{{
+            textTransforms.rotateY[0]
+          }}</span></label
         >
       </div>
 
       <div class="input-group">
         <input
+          v-model="textTransforms.rotateX[0]"
           id="rotateX-control"
           name="rotateX"
           type="range"
-          min="0"
-          max="360"
+          min="-180"
+          max="180"
           step="1"
-          value="0"
         />
         <label id="rotateX-control-label" for="rotateX"
-          >RotateX (degrees): <span class="value-readout">0</span></label
+          >RotateX (degrees):
+          <span class="value-readout">{{
+            textTransforms.rotateX[0]
+          }}</span></label
         >
       </div>
 
       <div class="input-group">
         <input
+          v-model="imgWrapper.perspective[0]"
           id="perspective-control"
           name="perspective"
           type="range"
           min="0"
           max="500"
           step="5"
-          value="0"
         />
         <label id="perspective-control-label" for="perspective"
-          >Perspective (pixels): <span class="value-readout">0</span></label
+          >Perspective (pixels):
+          <span class="value-readout">{{
+            imgWrapper.perspective[0]
+          }}</span></label
         >
       </div>
     </div>
@@ -68,6 +94,10 @@ interface textStyleObject {
   left: string;
   transform: string;
 }
+interface imgWrapperStyleObject {
+  perspective: string;
+  "perspective-origin"?: string;
+}
 
 export default defineComponent({
   name: "App",
@@ -84,6 +114,16 @@ export default defineComponent({
         scaleX: [1, ""] as numStrPair,
         scaleY: [1, ""] as numStrPair,
       },
+      imgWrapper: {
+        perspective: [100, "px"] as pxValuePair,
+        "perspective-origin": "left top",
+      },
+      isDragging: false,
+      isPerspectiveZeroed: false,
+      dragOffset: {
+        x: 0,
+        y: 0,
+      },
     };
   },
   computed: {
@@ -99,112 +139,92 @@ export default defineComponent({
     getTextStyleObject(): textStyleObject {
       const tp = this.textPositioning;
       return {
-        top: reconcileUnitValues(tp.top),
-        left: reconcileUnitValues(tp.left),
+        top: this.reconcileUnitValues(tp.top),
+        left: this.reconcileUnitValues(tp.left),
         transform: this.getTextTransformString,
       };
-
-      function reconcileUnitValues(input: numStrPair) {
-        return `${input[0] + input[1]}`;
+    },
+    getImgWrapperStyleObject(): imgWrapperStyleObject {
+      if (this.isPerspectiveZeroed) {
+        return { perspective: this.reconcileUnitValues([9999, "px"]) };
       }
-      // HMM!!  Looks hard as fuck to do recursive programming with TS
-      // const transformString = Object.entries(styleData.transform).reduce(
-      //   (acc, [k, v]) => {
-      //     return (acc + `${k}: ${v[0] + " " + v[1]}; `).trim();
-      //   },
-      //   ""
-      // );
-      // function flattenStyleData(input) {
-      //   if (Array.isArray(input)) {
-      //     return `${input[0]}${input[1]}`;
-      //   } else {
-      //     return Object.entries(input)
-      //       .map(([k, v]) => `${k}(${v[0] + v[1]})`)
-      //       .join(" ")
-      //       .trim();
-      // return Object.fromEntries(
-      //   Object.entries(input).map(([k, v]) => [
-      //     k,
-      //     mapStyles(v as Array<number | string> | Record<string, unknown>),
-      //   ])
-      // );
+      return {
+        perspective: this.reconcileUnitValues(this.imgWrapper.perspective),
+        "perspective-origin": this.imgWrapper["perspective-origin"],
+      };
     },
   },
+  methods: {
+    reconcileUnitValues(input: numStrPair): string {
+      return `${input[0] + input[1]}`;
+    },
+    allowDrop(evt: DragEvent) {
+      evt.preventDefault();
+    },
+    drag(evt: DragEvent) {
+      this.isDragging = true;
+      const { userText } = this.$refs as { userText: HTMLDivElement };
+      console.log(
+        "mouse x in userText:",
+        evt.x - userText.getBoundingClientRect().left
+      );
+      console.log(
+        "mouse y in userText",
+        evt.y - userText.getBoundingClientRect().top
+      );
+      this.dragOffset.x = evt.x - userText.getBoundingClientRect().left;
+      this.dragOffset.y = evt.y - userText.getBoundingClientRect().top;
+    },
+    drop(evt: DragEvent) {
+      const { workingLayer, userText } = this.$refs as {
+        workingLayer: HTMLDivElement;
+        userText: HTMLDivElement;
+      };
+      const workingLayerRect = workingLayer.getBoundingClientRect();
+      // const userTextRect = userText.getBoundingClientRect();
 
-  // created() {
-  //   const text = document.getElementById("user-text");
+      this.textPositioning.top[0] =
+        evt.y - workingLayerRect.top - this.dragOffset.y;
+      this.textPositioning.left[0] =
+        evt.x - workingLayerRect.left - this.dragOffset.x;
 
-  //   const imgWrapper = document.getElementById("img-wrapper");
-
-  //   // arbitrarily preplaced dummy text
-  //   text.style.top = "350px";
-  //   text.style.left = "70px";
-
-  //   // JS initialized perspectives and transforms
-
-  //   imgWrapper.addEventListener("dragover", allowDrop);
-  //   imgWrapper.addEventListener("drop", drop);
-
-  //   function allowDrop(event) {
-  //     event.preventDefault();
-  //   }
-
-  //   function drop(event) {
-  //     const droppedId = event.dataTransfer.getData("text/plain");
-  //     const droppedElt = document.getElementById(droppedId);
-  //     const droppedEltRect = droppedElt.getBoundingClientRect();
-  //     const imgWrapperRect = imgWrapper.getBoundingClientRect();
-  //     const newLeft = event.x - imgWrapperRect.left - droppedEltRect.width / 2;
-  //     const newTop = event.y - imgWrapperRect.top - droppedEltRect.height / 2;
-  //     droppedElt.style.top = `${newTop}px`;
-  //     droppedElt.style.left = `${newLeft}px`;
-  //     droppedElt.style.transform = transforms;
-  //   }
-
-  //   text.addEventListener("dragstart", drag);
-
-  //   function drag(event) {
-  //     // console.log("dragstart", event);
-  //     // event.target.classList.add("dragging");
-  //     event.dataTransfer.setData("text/plain", event.target.id);
-  //     event.dataTransfer.effectAllowed = "move";
-  //   }
-
-  //   // Controls
-  //   const controls = document.getElementById("control-bank").children;
-
-  //   for (const control of controls) {
-  //     const input = control.querySelector("input");
-  //     input.addEventListener("input", inputHandler);
-  //   }
-
-  //   const rotateXControl = document.querySelector("input#rotateX-control");
-  //   rotateXControl.addEventListener("input", inputHandler);
-
-  //   function inputHandler(evt) {
-  //     console.log(evt.target.name);
-  //     const value = evt.target.value;
-  //     const label = evt.target.labels[0];
-  //     const readout = label.querySelector("span.value-readout");
-  //     readout.innerText = value.toString();
-  //   }
-  // },
+      this.isDragging = false;
+      this.isPerspectiveZeroed = false;
+    },
+    mousedown() {
+      console.log("mousedown!");
+      this.isPerspectiveZeroed = true;
+    },
+  },
 });
 </script>
 
 <style>
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&family=Roboto:ital,wght@1,500&display=swap");
+* {
+  box-sizing: border-box;
+}
 
-.container {
+.main-container {
   display: flex;
   justify-content: center;
+
   gap: 0.5rem;
+  position: relative;
+}
+
+.img-container {
+  position: relative;
+  display: flex;
+  align-items: stretch;
 }
 
 #control-bank {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 0 0.25rem;
+  flex: 0 0 200px;
 }
 
 .input-group {
@@ -212,25 +232,31 @@ export default defineComponent({
   flex-direction: column;
   justify-content: center;
   margin-bottom: 1rem;
+  padding: 0.25rem;
 }
 
-#img-wrapper {
-  position: relative;
+.working-layer {
+  position: absolute;
   cursor: grab;
-  perspective-origin: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
-#user-text {
+.user-text {
   position: absolute;
   color: white;
   font-family: "Open Sans";
   font-weight: bold;
-  line-height: 2.5rem;
+  line-height: 80%;
   font-size: 4.5rem;
   transform-origin: center;
 }
 
-#user-text.dragging {
+.user-text.isDragging {
   color: red;
+  overflow: visible;
+  z-index: 1;
 }
 </style>
