@@ -5,7 +5,7 @@
       <img :src="currentImg" />
       <div
         class="working-layer"
-        :style="getImgWrapperStyleObject"
+        :style="getWorkingLayerStyleObject"
         ref="workingLayer"
         @dragover="allowDrop"
         @drop="drop"
@@ -62,7 +62,7 @@
 
       <div class="input-group">
         <input
-          v-model="imgWrapper.perspective[0]"
+          v-model="workingLayer.perspective[0]"
           id="perspective-control"
           name="perspective"
           type="range"
@@ -73,7 +73,7 @@
         <label id="perspective-control-label" for="perspective"
           >Perspective (pixels):
           <span class="value-readout">{{
-            imgWrapper.perspective[0]
+            workingLayer.perspective[0]
           }}</span></label
         >
       </div>
@@ -94,7 +94,7 @@ interface textStyleObject {
   left: string;
   transform: string;
 }
-interface imgWrapperStyleObject {
+interface workingLayerStyleObject {
   perspective: string;
   "perspective-origin"?: string;
 }
@@ -114,9 +114,9 @@ export default defineComponent({
         scaleX: [1, ""] as numStrPair,
         scaleY: [1, ""] as numStrPair,
       },
-      imgWrapper: {
+      workingLayer: {
         perspective: [100, "px"] as pxValuePair,
-        "perspective-origin": "left top",
+        "perspective-origin": "center",
       },
       isDragging: false,
       isPerspectiveZeroed: false,
@@ -144,13 +144,13 @@ export default defineComponent({
         transform: this.getTextTransformString,
       };
     },
-    getImgWrapperStyleObject(): imgWrapperStyleObject {
+    getworkingLayerStyleObject(): workingLayerStyleObject {
       if (this.isPerspectiveZeroed) {
         return { perspective: this.reconcileUnitValues([9999, "px"]) };
       }
       return {
-        perspective: this.reconcileUnitValues(this.imgWrapper.perspective),
-        "perspective-origin": this.imgWrapper["perspective-origin"],
+        perspective: this.reconcileUnitValues(this.workingLayer.perspective),
+        "perspective-origin": this.workingLayer["perspective-origin"],
       };
     },
   },
@@ -208,7 +208,6 @@ export default defineComponent({
 .main-container {
   display: flex;
   justify-content: center;
-
   gap: 0.5rem;
   position: relative;
 }
