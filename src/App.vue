@@ -7,6 +7,7 @@
         class="working-layer"
         :style="getWorkingLayerStyleObject"
         ref="workingLayer"
+        @mousemove="dragOrigin"
         @dragover="allowDrop"
         @drop="drop"
       >
@@ -16,11 +17,18 @@
           ref="userText"
           :style="getTextStyleObject"
           draggable="true"
-          @dragstart="drag"
+          @dragstart="dragText"
           @mousedown="mousedown"
         >
           New<br />York
         </div>
+        <div
+          class="perspective-origin-indicator"
+          :style="pOriginIndicatorStyleObject"
+          ref="pOrigin"
+          @mousedown="dragOriginStart"
+          @mouseup="dragOriginEnd"
+        ></div>
       </div>
     </div>
     <div id="control-bank">
@@ -67,8 +75,8 @@
           name="perspective"
           type="range"
           min="0"
-          max="500"
-          step="5"
+          max="1000"
+          step="25"
         />
         <label id="perspective-control-label" for="perspective"
           >Perspective (pixels):
@@ -88,6 +96,7 @@ import { imgUrls } from "./imgUrls";
 // TODO: split types to separate file
 type pxValuePair = [number, "px"];
 type degValuePair = [number, "deg"];
+type percentValuePair = [number, "%"];
 type numStrPair = [number, string];
 interface textStyleObject {
   top: string;
@@ -111,12 +120,15 @@ export default defineComponent({
       textTransforms: {
         rotateX: [0, "deg"] as degValuePair,
         rotateY: [0, "deg"] as degValuePair,
-        scaleX: [1, ""] as numStrPair,
-        scaleY: [1, ""] as numStrPair,
+        // scaleX: [1, ""] as numStrPair,
+        // scaleY: [1, ""] as numStrPair,
       },
       workingLayer: {
-        perspective: [100, "px"] as pxValuePair,
-        "perspective-origin": "center",
+        perspective: [500, "px"] as pxValuePair,
+        "perspective-origin": {
+          x: [50, "%"] as percentValuePair,
+          y: [50, "%"] as percentValuePair,
+        },
       },
       isDragging: false,
       isPerspectiveZeroed: false,
@@ -124,6 +136,7 @@ export default defineComponent({
         x: 0,
         y: 0,
       },
+      isDraggingPOrigin: false,
     };
   },
   computed: {
@@ -132,7 +145,13 @@ export default defineComponent({
     },
     getTextTransformString(): string {
       return Object.entries(this.textTransforms)
-        .map(([k, v]) => `${k}(${v[0] + v[1]})`)
+        .map(([k, v]) => `${k}(${v[0] + v[1]})`) // could use reconcileValues method?
+        .join(" ")
+        .trim();
+    },
+    getPerspectiveOriginString(): string {
+      return Object.values(this.workingLayer["perspective-origin"])
+        .map((v) => this.reconcileUnitValues(v))
         .join(" ")
         .trim();
     },
@@ -144,24 +163,31 @@ export default defineComponent({
         transform: this.getTextTransformString,
       };
     },
-    getworkingLayerStyleObject(): workingLayerStyleObject {
+    getWorkingLayerStyleObject(): workingLayerStyleObject {
       if (this.isPerspectiveZeroed) {
         return { perspective: this.reconcileUnitValues([9999, "px"]) };
       }
       return {
         perspective: this.reconcileUnitValues(this.workingLayer.perspective),
-        "perspective-origin": this.workingLayer["perspective-origin"],
+        "perspective-origin": this.getPerspectiveOriginString,
       };
+    },
+    pOriginIndicatorStyleObject(): string {
+      const { x, y } = this.workingLayer["perspective-origin"];
+      return `top: ${this.reconcileUnitValues(
+        y
+      )}; left: ${this.reconcileUnitValues(x)}`;
     },
   },
   methods: {
-    reconcileUnitValues(input: numStrPair): string {
+    reconcileUnitValues(input: numStrPair | percentValuePair): string {
       return `${input[0] + input[1]}`;
     },
+
     allowDrop(evt: DragEvent) {
       evt.preventDefault();
     },
-    drag(evt: DragEvent) {
+    dragText(evt: DragEvent) {
       this.isDragging = true;
       const { userText } = this.$refs as { userText: HTMLDivElement };
       console.log(
@@ -176,12 +202,10 @@ export default defineComponent({
       this.dragOffset.y = evt.y - userText.getBoundingClientRect().top;
     },
     drop(evt: DragEvent) {
-      const { workingLayer, userText } = this.$refs as {
+      const { workingLayer } = this.$refs as {
         workingLayer: HTMLDivElement;
-        userText: HTMLDivElement;
       };
       const workingLayerRect = workingLayer.getBoundingClientRect();
-      // const userTextRect = userText.getBoundingClientRect();
 
       this.textPositioning.top[0] =
         evt.y - workingLayerRect.top - this.dragOffset.y;
@@ -190,6 +214,31 @@ export default defineComponent({
 
       this.isDragging = false;
       this.isPerspectiveZeroed = false;
+    },
+    dragOriginStart(): void {
+      this.isDraggingPOrigin = true;
+    },
+    dragOrigin(evt: MouseEvent): void {
+      if (!this.isDraggingPOrigin) return;
+
+      const { workingLayer } = this.$refs as {
+        workingLayer: HTMLDivElement;
+      };
+      const {
+        top: workingLayerTop,
+        left: workingLayerLeft,
+        width: workingLayerWidth,
+        height: workingLayerHeight,
+      } = workingLayer.getBoundingClientRect();
+      const left = evt.x - workingLayerLeft;
+      const top = evt.y - workingLayerTop;
+      const leftAsPercentage = (left / workingLayerWidth) * 100;
+      const topAsPercentage = (top / workingLayerHeight) * 100;
+      this.workingLayer["perspective-origin"].x[0] = leftAsPercentage;
+      this.workingLayer["perspective-origin"].y[0] = topAsPercentage;
+    },
+    dragOriginEnd() {
+      this.isDraggingPOrigin = false;
     },
     mousedown() {
       console.log("mousedown!");
@@ -236,7 +285,6 @@ export default defineComponent({
 
 .working-layer {
   position: absolute;
-  cursor: grab;
   top: 0;
   left: 0;
   width: 100%;
@@ -251,11 +299,31 @@ export default defineComponent({
   line-height: 80%;
   font-size: 4.5rem;
   transform-origin: center;
+  cursor: grab;
+  text-rendering: geometricPrecision;
 }
 
 .user-text.isDragging {
   color: red;
   overflow: visible;
   z-index: 1;
+}
+
+.perspective-origin-indicator {
+  display: inline-block;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  cursor: crosshair;
+  transform: translate(-50%, -50%);
+}
+
+.perspective-origin-indicator::after {
+  content: "¤";
+  color: red;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 </style>
