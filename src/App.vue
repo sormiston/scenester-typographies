@@ -7,18 +7,16 @@
         class="working-layer"
         :style="getWorkingLayerStyleObject"
         ref="workingLayer"
-        @mousemove="dragOrigin"
-        @dragover="allowDrop"
-        @drop="drop"
+        @mousemove="drag"
+        @mouseup="textDragEnd"
       >
         <div
           class="user-text"
-          :class="{ isDragging }"
+          :class="{ isDragging: isDraggingText }"
           ref="userText"
           :style="getTextStyleObject"
-          draggable="true"
-          @dragstart="dragText"
-          @mousedown="mousedown"
+          @mousedown="textDragStart"
+          @mouseup="textDragEnd"
         >
           New<br />York
         </div>
@@ -44,10 +42,8 @@
         />
         <label id="rotateY-control-label" for="rotateY"
           >RotateY (degrees):
-          <span class="value-readout">{{
-            textTransforms.rotateY[0]
-          }}</span></label
-        >
+          <span class="value-readout">{{ textTransforms.rotateY[0] }}</span>
+        </label>
       </div>
 
       <div class="input-group">
@@ -62,10 +58,8 @@
         />
         <label id="rotateX-control-label" for="rotateX"
           >RotateX (degrees):
-          <span class="value-readout">{{
-            textTransforms.rotateX[0]
-          }}</span></label
-        >
+          <span class="value-readout">{{ textTransforms.rotateX[0] }} </span>
+        </label>
       </div>
 
       <div class="input-group">
@@ -80,9 +74,9 @@
         />
         <label id="perspective-control-label" for="perspective"
           >Perspective (pixels):
-          <span class="value-readout">{{
-            workingLayer.perspective[0]
-          }}</span></label
+          <span class="value-readout"
+            >{{ workingLayer.perspective[0] }}
+          </span></label
         >
       </div>
     </div>
@@ -120,8 +114,8 @@ export default defineComponent({
       textTransforms: {
         rotateX: [0, "deg"] as degValuePair,
         rotateY: [0, "deg"] as degValuePair,
-        // scaleX: [1, ""] as numStrPair,
-        // scaleY: [1, ""] as numStrPair,
+        translateX: [-50, "%"] as percentValuePair,
+        translateY: [-50, "%"] as percentValuePair,
       },
       workingLayer: {
         perspective: [500, "px"] as pxValuePair,
@@ -130,13 +124,8 @@ export default defineComponent({
           y: [50, "%"] as percentValuePair,
         },
       },
-      isDragging: false,
-      isPerspectiveZeroed: false,
-      dragOffset: {
-        x: 0,
-        y: 0,
-      },
       isDraggingPOrigin: false,
+      isDraggingText: false,
     };
   },
   computed: {
@@ -145,7 +134,7 @@ export default defineComponent({
     },
     getTextTransformString(): string {
       return Object.entries(this.textTransforms)
-        .map(([k, v]) => `${k}(${v[0] + v[1]})`) // could use reconcileValues method?
+        .map(([k, v]) => `${k}(${this.reconcileUnitValues(v)})`) // could use reconcileValues method?
         .join(" ")
         .trim();
     },
@@ -164,9 +153,6 @@ export default defineComponent({
       };
     },
     getWorkingLayerStyleObject(): workingLayerStyleObject {
-      if (this.isPerspectiveZeroed) {
-        return { perspective: this.reconcileUnitValues([9999, "px"]) };
-      }
       return {
         perspective: this.reconcileUnitValues(this.workingLayer.perspective),
         "perspective-origin": this.getPerspectiveOriginString,
@@ -183,44 +169,25 @@ export default defineComponent({
     reconcileUnitValues(input: numStrPair | percentValuePair): string {
       return `${input[0] + input[1]}`;
     },
-
-    allowDrop(evt: DragEvent) {
-      evt.preventDefault();
-    },
-    dragText(evt: DragEvent) {
-      this.isDragging = true;
-      const { userText } = this.$refs as { userText: HTMLDivElement };
-      console.log(
-        "mouse x in userText:",
-        evt.x - userText.getBoundingClientRect().left
-      );
-      console.log(
-        "mouse y in userText",
-        evt.y - userText.getBoundingClientRect().top
-      );
-      this.dragOffset.x = evt.x - userText.getBoundingClientRect().left;
-      this.dragOffset.y = evt.y - userText.getBoundingClientRect().top;
-    },
-    drop(evt: DragEvent) {
+    textDragStart({ x, y }: MouseEvent) {
+      this.isDraggingText = true;
       const { workingLayer } = this.$refs as {
         workingLayer: HTMLDivElement;
       };
-      const workingLayerRect = workingLayer.getBoundingClientRect();
-
-      this.textPositioning.top[0] =
-        evt.y - workingLayerRect.top - this.dragOffset.y;
-      this.textPositioning.left[0] =
-        evt.x - workingLayerRect.left - this.dragOffset.x;
-
-      this.isDragging = false;
-      this.isPerspectiveZeroed = false;
+      const { top: workingLayerTop, left: workingLayerLeft } =
+        workingLayer.getBoundingClientRect();
+      const left = x - workingLayerLeft;
+      const top = y - workingLayerTop;
+      this.textPositioning.left[0] = left;
+      this.textPositioning.top[0] = top;
+    },
+    textDragEnd() {
+      this.isDraggingText = false;
     },
     dragOriginStart(): void {
       this.isDraggingPOrigin = true;
     },
-    dragOrigin(evt: MouseEvent): void {
-      if (!this.isDraggingPOrigin) return;
-
+    drag({ x, y }: MouseEvent): void {
       const { workingLayer } = this.$refs as {
         workingLayer: HTMLDivElement;
       };
@@ -230,19 +197,21 @@ export default defineComponent({
         width: workingLayerWidth,
         height: workingLayerHeight,
       } = workingLayer.getBoundingClientRect();
-      const left = evt.x - workingLayerLeft;
-      const top = evt.y - workingLayerTop;
-      const leftAsPercentage = (left / workingLayerWidth) * 100;
-      const topAsPercentage = (top / workingLayerHeight) * 100;
-      this.workingLayer["perspective-origin"].x[0] = leftAsPercentage;
-      this.workingLayer["perspective-origin"].y[0] = topAsPercentage;
+      const left = x - workingLayerLeft;
+      const top = y - workingLayerTop;
+
+      if (this.isDraggingPOrigin) {
+        const leftAsPercentage = (left / workingLayerWidth) * 100;
+        const topAsPercentage = (top / workingLayerHeight) * 100;
+        this.workingLayer["perspective-origin"].x[0] = leftAsPercentage;
+        this.workingLayer["perspective-origin"].y[0] = topAsPercentage;
+      } else if (this.isDraggingText) {
+        this.textPositioning.left[0] = left;
+        this.textPositioning.top[0] = top;
+      }
     },
     dragOriginEnd() {
       this.isDraggingPOrigin = false;
-    },
-    mousedown() {
-      console.log("mousedown!");
-      this.isPerspectiveZeroed = true;
     },
   },
 });
@@ -301,12 +270,11 @@ export default defineComponent({
   transform-origin: center;
   cursor: grab;
   text-rendering: geometricPrecision;
+  user-select: none;
 }
 
 .user-text.isDragging {
-  color: red;
-  overflow: visible;
-  z-index: 1;
+  outline: 1px solid blueviolet;
 }
 
 .perspective-origin-indicator {
