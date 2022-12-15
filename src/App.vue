@@ -2,13 +2,17 @@
 <template>
   <div class="main-container">
     <div class="img-container">
-      <img :src="currentImg" />
+      <img
+        class="working-image"
+        src="./assets/person-middle-streets-poznan-surrounded-by-old-buildings-captured-poland_181624-7908.webp"
+      />
       <div
         class="working-layer"
         :style="getWorkingLayerStyleObject"
         ref="workingLayer"
         @mousemove="drag"
         @mouseup="textDragEnd"
+        @touchmove="drag"
       >
         <div
           class="user-text"
@@ -17,6 +21,8 @@
           :style="getTextStyleObject"
           @mousedown="textDragStart"
           @mouseup="textDragEnd"
+          @touchstart="textDragStart"
+          @touchend="textDragEnd"
         >
           New<br />York
         </div>
@@ -26,9 +32,12 @@
           ref="pOrigin"
           @mousedown="dragOriginStart"
           @mouseup="dragOriginEnd"
+          @touchstart="dragOriginStart"
+          @touchend="dragOriginEnd"
         ></div>
       </div>
     </div>
+
     <div id="control-bank">
       <div class="input-group">
         <input
@@ -114,8 +123,6 @@ export default defineComponent({
       textTransforms: {
         rotateX: [0, "deg"] as degValuePair,
         rotateY: [0, "deg"] as degValuePair,
-        translateX: [-50, "%"] as percentValuePair,
-        translateY: [-50, "%"] as percentValuePair,
       },
       workingLayer: {
         perspective: [500, "px"] as pxValuePair,
@@ -169,25 +176,34 @@ export default defineComponent({
     reconcileUnitValues(input: numStrPair | percentValuePair): string {
       return `${input[0] + input[1]}`;
     },
-    textDragStart({ x, y }: MouseEvent) {
+    textDragStart(evt: MouseEvent | TouchEvent) {
+      evt.preventDefault();
       this.isDraggingText = true;
       const { workingLayer } = this.$refs as {
         workingLayer: HTMLDivElement;
       };
       const { top: workingLayerTop, left: workingLayerLeft } =
         workingLayer.getBoundingClientRect();
+
+      const { x, y } = this.getCoordsFromTouchOrMouse(evt);
+
+      const userText = this.$refs.userText as HTMLDivElement;
+      const { width, height } = userText.getBoundingClientRect();
       const left = x - workingLayerLeft;
       const top = y - workingLayerTop;
-      this.textPositioning.left[0] = left;
-      this.textPositioning.top[0] = top;
+      this.textPositioning.left[0] = left - width / 2;
+      this.textPositioning.top[0] = top - height / 2;
     },
-    textDragEnd() {
+    textDragEnd(evt: MouseEvent | TouchEvent) {
+      evt.preventDefault();
       this.isDraggingText = false;
     },
-    dragOriginStart(): void {
+    dragOriginStart(evt: MouseEvent | TouchEvent): void {
+      evt.preventDefault();
       this.isDraggingPOrigin = true;
     },
-    drag({ x, y }: MouseEvent): void {
+    drag(evt: MouseEvent | TouchEvent): void {
+      evt.preventDefault();
       const { workingLayer } = this.$refs as {
         workingLayer: HTMLDivElement;
       };
@@ -197,6 +213,9 @@ export default defineComponent({
         width: workingLayerWidth,
         height: workingLayerHeight,
       } = workingLayer.getBoundingClientRect();
+
+      const { x, y } = this.getCoordsFromTouchOrMouse(evt);
+
       const left = x - workingLayerLeft;
       const top = y - workingLayerTop;
 
@@ -206,42 +225,79 @@ export default defineComponent({
         this.workingLayer["perspective-origin"].x[0] = leftAsPercentage;
         this.workingLayer["perspective-origin"].y[0] = topAsPercentage;
       } else if (this.isDraggingText) {
-        this.textPositioning.left[0] = left;
-        this.textPositioning.top[0] = top;
+        const userText = this.$refs.userText as HTMLDivElement;
+        const { width, height } = userText.getBoundingClientRect();
+
+        this.textPositioning.left[0] = left - width / 2;
+        this.textPositioning.top[0] = top - height / 2;
       }
     },
-    dragOriginEnd() {
+    dragOriginEnd(evt: MouseEvent | TouchEvent) {
+      evt.preventDefault();
       this.isDraggingPOrigin = false;
+    },
+    getCoordsFromTouchOrMouse(evt: MouseEvent | TouchEvent): {
+      x: number;
+      y: number;
+    } {
+      let x, y;
+      if (evt instanceof MouseEvent) {
+        x = evt.x;
+        y = evt.y;
+      } else {
+        // is a touch event
+        const { targetTouches } = evt;
+        x = targetTouches[0].clientX;
+        y = targetTouches[0].clientY;
+      }
+      return { x, y };
     },
   },
 });
 </script>
 
-<style>
+<style lang="scss">
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&family=Roboto:ital,wght@1,500&display=swap");
 * {
   box-sizing: border-box;
 }
 
+body {
+  position: absolute;
+  width: 100vw;
+}
+$lg: "955px";
+
 .main-container {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 0.5rem;
   position: relative;
+  width: 100%;
+  flex-direction: column;
+
+  @media screen and (min-width: $lg) {
+    flex-direction: row;
+  }
 }
 
 .img-container {
   position: relative;
   display: flex;
   align-items: stretch;
+  margin: 12px;
 }
 
 #control-bank {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   padding: 0 0.25rem;
-  flex: 0 0 200px;
+
+  @media screen and (min-width: $lg) {
+    flex-direction: column;
+  }
 }
 
 .input-group {
@@ -250,6 +306,7 @@ export default defineComponent({
   justify-content: center;
   margin-bottom: 1rem;
   padding: 0.25rem;
+  max-width: 200px;
 }
 
 .working-layer {
@@ -258,6 +315,10 @@ export default defineComponent({
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+.working-image {
+  object-fit: contain;
 }
 
 .user-text {
@@ -271,6 +332,7 @@ export default defineComponent({
   cursor: grab;
   text-rendering: geometricPrecision;
   user-select: none;
+  outline: 3px solid blueviolet;
 }
 
 .user-text.isDragging {

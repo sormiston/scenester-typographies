@@ -6,11 +6,14 @@ UX Improvements:
   ✔ Clicking on text should be done via center of element @done(22-12-13 01:37)
   ✔ Refactor HTML5 drag and drop OUT of userText handling @done(22-12-15 02:30)
   ☐ Under-the-thumb preview zoom (!)
-  ☐ Touch capability
+  ✔ Touch capability @done(22-12-15 22:35)
 
 New features BIG:
   ✔ Perspective origin click to set @done(22-12-13 01:38)
+  ☐ Active Layer switching
   ☐ New text + layer click to set
+  ☐ Switch pictures with state / context save
+  ☐ Guidelines from text rect corners to pOrigin
   
 
 New features MEDIUM:
