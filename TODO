@@ -10,6 +10,7 @@ UX Improvements:
 
 New features BIG:
   ✔ Perspective origin click to set @done(22-12-13 01:38)
+  ✔ Abstract to component @done(22-12-17 20:40)
   ☐ Active Layer switching
   ☐ New text + layer click to set
   ☐ Switch pictures with state / context save
