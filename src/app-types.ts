@@ -30,9 +30,10 @@ export interface perspectiveData {
     y: percentValuePair;
   };
 }
-
 export interface textLayer {
+  id: string;
   textPositioning: textPositioning;
   textTransforms: textTransforms;
   perspectiveData: perspectiveData;
+  text: string;
 }

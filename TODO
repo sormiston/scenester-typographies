@@ -16,6 +16,11 @@ New features BIG:
   ☐ Switch pictures with state / context save
   ☐ Guidelines from text rect corners to pOrigin
   
+Chores:
+  ☐ Pascal case type and interfaces
+  ☐ Refactor xyCoord type to an { x: number, y: number } interface
+  ☐ Stress test text positioning rects (scroll, better mapping to canvas)
+  ☐ resolve forbidden non-null assertions
 
 New features MEDIUM:
   ☐ New Input: transform origin
@@ -25,3 +30,5 @@ Text specific modifier bank:
   ☐ font type
   ☐ font size
   
+Print image:
+  ☐ Canvas replica @started(22-12-22 01:10)
