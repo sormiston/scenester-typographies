@@ -2,12 +2,6 @@
   <div>
     <button value="commit" @click="saveWork">Save</button>
   </div>
-  <div v-if="dataUrl">
-    <div>
-      <button v-if="dataUrl">Download</button>
-      <a :href="dataUrl" download="your-img.jpg"></a>
-    </div>
-  </div>
 
   <teleport to="body">
     <video
@@ -27,11 +21,11 @@ const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 export default {
   name: "CommitAndDownload",
+  emits: ["enterPreviewMode"],
   data() {
     return {
       committing: true,
       SCALE: 1,
-      dataUrl: "",
     };
   },
   methods: {
@@ -56,7 +50,7 @@ export default {
         ctx.drawImage(video, 0, 0, width * this.SCALE, height * this.SCALE);
 
         captureStream.getTracks().forEach((track) => track.stop());
-        this.dataUrl = canvas.toDataURL("image/jpeg");
+        this.$emit("enterPreviewMode", canvas.toDataURL("image/jpeg"));
       } catch (err) {
         console.error(err);
       } finally {

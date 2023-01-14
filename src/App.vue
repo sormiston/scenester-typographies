@@ -87,9 +87,14 @@
         >
       </div>
       <div class="input-group">
-        <commit-and-download />
+        <commit-and-download @enterPreviewMode="enterPreviewMode" />
       </div>
     </div>
+  </div>
+  <div v-if="jpegData" id="preview-to-download">
+    <img :src="jpegData" />
+    <a :href="jpegData" download="my-image.jpeg">Download</a>
+    <a href="#" @click="leavePreviewMode">Go back</a>
   </div>
 </template>
 
@@ -117,6 +122,7 @@ export default defineComponent({
       images: imgUrls as string[],
       layers: [] as textLayer[],
       activeLayerIdx: 0,
+      jpegData: "",
     };
   },
   computed: {
@@ -128,6 +134,12 @@ export default defineComponent({
     },
   },
   methods: {
+    enterPreviewMode(dataUrl: string) {
+      this.jpegData = dataUrl;
+    },
+    leavePreviewMode() {
+      this.jpegData = "";
+    },
     updateTextPositioning(payload: { id: string; left: number; top: number }) {
       const { id, top, left } = payload;
       const targetLayer = this.layers.find((l) => l.id === id);
@@ -253,5 +265,13 @@ $COLORS: #1a1423, #372549, #774c60, #b75d69, #eacdc2;
 
 .working-image {
   object-fit: contain;
+}
+
+#preview-to-download {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
 }
 </style>
