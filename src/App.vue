@@ -86,6 +86,9 @@
           </span></label
         >
       </div>
+      <div class="input-group">
+        <commit-and-download />
+      </div>
     </div>
   </div>
 </template>
@@ -100,12 +103,14 @@ import type {
 } from "@/app-types";
 import { v4 as uuid } from "uuid";
 import TextLayer from "@/components/TextLayer.vue";
+import CommitAndDownload from "@/components/CommitAndDownload.vue";
 import { imgUrls } from "./imgUrls";
 
 export default defineComponent({
   name: "App",
   components: {
     TextLayer,
+    CommitAndDownload,
   },
   data() {
     return {
@@ -170,7 +175,8 @@ export default defineComponent({
 }
 
 body {
-  position: absolute;
+  margin: 0;
+  position: relative;
   width: 100vw;
 }
 
