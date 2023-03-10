@@ -2,10 +2,7 @@
 <template>
   <div class="main-container">
     <div class="img-container">
-      <img
-        class="working-image"
-        src="./assets/person-middle-streets-poznan-surrounded-by-old-buildings-captured-poland_181624-7908.webp"
-      />
+      <img class="working-image" :src="currentImg" />
       <text-layer
         :textPositioning="activeLayer.textPositioning"
         :perspectiveData="activeLayer.perspectiveData"
@@ -69,20 +66,12 @@
           </span></label
         >
       </div>
-      <div class="input-group">
-        <commit-and-download @enterPreviewMode="enterPreviewMode" />
-      </div>
     </div>
-  </div>
-  <div v-if="jpegData" id="preview-to-download">
-    <img :src="jpegData" />
-    <a :href="jpegData" download="my-image.jpeg">Download</a>
-    <a href="#" @click="leavePreviewMode">Go back</a>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from "vue";
+import { defineComponent } from "vue";
 import type {
   pxValuePair,
   degValuePair,
@@ -90,21 +79,18 @@ import type {
   textLayer,
 } from "@/app-types";
 import TextLayer from "@/components/TextLayer.vue";
-import CommitAndDownload from "@/components/CommitAndDownload.vue";
 import { imgUrls } from "./imgUrls";
 
 export default defineComponent({
   name: "App",
   components: {
     TextLayer,
-    CommitAndDownload,
   },
   data() {
     return {
       images: imgUrls as string[],
       layers: [] as textLayer[],
       activeLayerIdx: 0,
-      jpegData: "",
     };
   },
   computed: {

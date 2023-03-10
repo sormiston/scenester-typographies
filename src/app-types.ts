@@ -1,10 +1,11 @@
+import { CSSProperties } from "vue";
 export type numStrPair = [number, string];
-export interface textStyleObject {
+export interface textStyleObject extends CSSProperties {
   top: string;
   left: string;
   transform: string;
 }
-export interface workingLayerStyleObject {
+export interface workingLayerStyleObject extends CSSProperties {
   perspective: string;
   "perspective-origin"?: string;
 }
