@@ -1,16 +1,12 @@
 <template>
-  <PageEditor />
+  <router-view />
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import PageEditor from "@/views/PageEditor.vue";
 
 export default defineComponent({
   name: "App",
-  components: {
-    PageEditor,
-  },
 });
 </script>
 
