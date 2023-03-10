@@ -1,5 +1,6 @@
 
-
+Architecture:
+  ✔ Refactor App as root level controller + Editor page @done(23-03-10 22:07)
 
 Parity from codepen:
   ✔ Text drag drop placement @started(22-12-08 15:34) @done(22-12-08 16:12) @lasted(38m33s)
