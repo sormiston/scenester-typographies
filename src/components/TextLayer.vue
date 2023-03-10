@@ -1,7 +1,7 @@
 <template>
   <div
     class="working-layer"
-    :style="getWorkingLayerStyle"
+    :style="getWorkingLayerStyleObject"
     ref="workingLayer"
     @mousemove="drag"
     @mouseup="textDragEnd"
@@ -11,17 +11,17 @@
       class="user-text"
       :class="{ isDragging: isDraggingText }"
       ref="userText"
-      :style="getTextStyle"
+      :style="getTextStyleObject"
       @mousedown="textDragStart"
       @mouseup="textDragEnd"
       @touchstart="textDragStart"
       @touchend="textDragEnd"
     >
-      {{ text }}
+      New<br />York
     </div>
     <div
       class="perspective-origin-indicator"
-      :style="pOriginIndicatorStyle"
+      :style="pOriginIndicatorStyleObject"
       ref="pOrigin"
       @mousedown="dragOriginStart"
       @mouseup="dragOriginEnd"
@@ -47,10 +47,6 @@ import type {
 export default defineComponent({
   name: "TextLayer",
   props: {
-    id: {
-      type: String,
-      required: true,
-    },
     textPositioning: {
       type: Object as PropType<textPositioning>,
       required: true,
@@ -63,10 +59,6 @@ export default defineComponent({
       type: Object as PropType<perspectiveData>,
       required: true,
     },
-    text: {
-      type: String,
-      required: true,
-    },
   },
   data() {
     return {
@@ -75,34 +67,34 @@ export default defineComponent({
     };
   },
   computed: {
-    getWorkingLayerStyle(): workingLayerStyleObject {
+    getWorkingLayerStyleObject(): workingLayerStyleObject {
       return {
         perspective: this.reconcileUnitValues(this.perspectiveData.perspective),
-        "perspective-origin": this.getPerspectiveOrigin,
+        "perspective-origin": this.getPerspectiveOriginString,
       };
     },
-    getTextTransform(): string {
+    getTextTransformString(): string {
       return Object.entries(this.textTransforms)
         .map(([k, v]) => `${k}(${this.reconcileUnitValues(v)})`) // could use reconcileValues method?
         .join(" ")
         .trim();
     },
-    getPerspectiveOrigin(): string {
+    getPerspectiveOriginString(): string {
       return Object.values(this.perspectiveData["perspective-origin"])
         .map((v) => this.reconcileUnitValues(v))
         .join(" ")
         .trim();
     },
-    getTextStyle(): textStyleObject {
+    getTextStyleObject(): textStyleObject {
       const tp = this.textPositioning;
       return {
         top: this.reconcileUnitValues(tp.top),
         left: this.reconcileUnitValues(tp.left),
-        transform: this.getTextTransform,
+        transform: this.getTextTransformString,
       };
     },
 
-    pOriginIndicatorStyle(): string {
+    pOriginIndicatorStyleObject(): string {
       const { x, y } = this.perspectiveData["perspective-origin"];
       return `top: ${this.reconcileUnitValues(
         y
@@ -134,7 +126,6 @@ export default defineComponent({
         const leftAsPercentage = (left / workingLayerWidth) * 100;
         const topAsPercentage = (top / workingLayerHeight) * 100;
         this.$emit("update:perspectiveData", {
-          id: this.id,
           x: leftAsPercentage,
           y: topAsPercentage,
         });
@@ -142,7 +133,6 @@ export default defineComponent({
         const userText = this.$refs.userText as HTMLDivElement;
         const { width, height } = userText.getBoundingClientRect();
         this.$emit("update:textPositioning", {
-          id: this.id,
           left: left - width / 2,
           top: top - height / 2,
         });
@@ -165,7 +155,6 @@ export default defineComponent({
       const top = y - workingLayerTop;
 
       this.$emit("update:textPositioning", {
-        id: this.id,
         left: left - width / 2,
         top: top - height / 2,
       });
@@ -220,7 +209,7 @@ export default defineComponent({
   font-family: "Open Sans";
   font-weight: bold;
   line-height: 80%;
-  font-size: 4.5rem; /* should be javascript */
+  font-size: 4.5rem;
   transform-origin: center;
   cursor: grab;
   text-rendering: geometricPrecision;

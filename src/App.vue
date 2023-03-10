@@ -1,32 +1,15 @@
 <!-- eslint-disable @typescript-eslint/no-non-null-assertion -->
 <template>
   <div class="main-container">
-    <div id="layer-control-bank">
-      <button @click="addLayer">Add layer</button>
-      <div
-        v-for="(layer, index) in layers"
-        :key="layer.id"
-        class="layer-select-button"
-        :class="{ 'active-layer': index === activeLayerIdx }"
-        :data-id="layer.id"
-        @click="selectActivelayer"
-      >
-        {{ index + 1 }}
-      </div>
-    </div>
     <div class="img-container">
       <img
         class="working-image"
         src="./assets/person-middle-streets-poznan-surrounded-by-old-buildings-captured-poland_181624-7908.webp"
       />
       <text-layer
-        v-for="layer in layers"
-        :key="layer.id"
-        :id="layer.id"
-        :text="layer.text"
-        :textPositioning="layer.textPositioning"
-        :perspectiveData="layer.perspectiveData"
-        :textTransforms="layer.textTransforms"
+        :textPositioning="activeLayer.textPositioning"
+        :perspectiveData="activeLayer.perspectiveData"
+        :textTransforms="activeLayer.textTransforms"
         @update:textPositioning="updateTextPositioning"
         @update:perspectiveData="updatePerspectiveData"
       />
@@ -76,7 +59,7 @@
           name="perspective"
           type="range"
           min="0"
-          max="999"
+          max="1000"
           step="25"
         />
         <label id="perspective-control-label" for="perspective"
@@ -99,14 +82,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, reactive } from "vue";
 import type {
   pxValuePair,
-  percentValuePair,
   degValuePair,
+  percentValuePair,
   textLayer,
 } from "@/app-types";
-import { v4 as uuid } from "uuid";
 import TextLayer from "@/components/TextLayer.vue";
 import CommitAndDownload from "@/components/CommitAndDownload.vue";
 import { imgUrls } from "./imgUrls";
@@ -134,28 +116,19 @@ export default defineComponent({
     },
   },
   methods: {
-    enterPreviewMode(dataUrl: string) {
-      this.jpegData = dataUrl;
+    updateTextPositioning(payload: { left: number; top: number }) {
+      const { top, left } = payload;
+      this.activeLayer.textPositioning.top[0] = top;
+      this.activeLayer.textPositioning.left[0] = left;
     },
-    leavePreviewMode() {
-      this.jpegData = "";
-    },
-    updateTextPositioning(payload: { id: string; left: number; top: number }) {
-      const { id, top, left } = payload;
-      const targetLayer = this.layers.find((l) => l.id === id);
-      targetLayer!.textPositioning.top[0] = top;
-      targetLayer!.textPositioning.left[0] = left;
-    },
-    updatePerspectiveData(payload: { id: string; x: number; y: number }) {
-      const { id, x, y } = payload;
-      const targetLayer = this.layers.find((l) => l.id === id);
-      targetLayer!.perspectiveData["perspective-origin"].x[0] = x;
-      targetLayer!.perspectiveData["perspective-origin"].y[0] = y;
+    updatePerspectiveData(payload: { x: number; y: number }) {
+      const { x, y } = payload;
+      this.activeLayer.perspectiveData["perspective-origin"].x[0] = x;
+      this.activeLayer.perspectiveData["perspective-origin"].y[0] = y;
     },
   },
   created(): void {
     const initLayer: textLayer = {
-      id: uuid(),
       textPositioning: {
         top: [350, "px"] as pxValuePair,
         left: [70, "px"] as pxValuePair,
@@ -171,7 +144,6 @@ export default defineComponent({
           y: [50, "%"] as percentValuePair,
         },
       },
-      text: "Hello",
     };
     this.layers.push(initLayer);
   },
@@ -179,9 +151,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
-@use "sass:list";
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&family=Roboto:ital,wght@1,500&display=swap");
-
 * {
   box-sizing: border-box;
 }
@@ -191,7 +161,6 @@ body {
   position: relative;
   width: 100vw;
 }
-
 $lg: "955px";
 
 .main-container {
@@ -215,30 +184,6 @@ $lg: "955px";
   margin: 12px;
 }
 
-#layer-control-bank {
-  display: flex;
-  gap: 12px;
-}
-
-$COLORS: #1a1423, #372549, #774c60, #b75d69, #eacdc2;
-
-.layer-select-button {
-  width: 20px;
-  height: 20px;
-  text-align: center;
-  color: white;
-
-  @for $i from 1 through 5 {
-    &:nth-of-type(#{$i}) {
-      background-color: nth($COLORS, $i);
-    }
-  }
-
-  &.active-layer {
-    outline: 2px solid mediumaquamarine;
-  }
-}
-
 #control-bank {
   display: flex;
   flex-direction: row;
@@ -257,10 +202,6 @@ $COLORS: #1a1423, #372549, #774c60, #b75d69, #eacdc2;
   margin-bottom: 1rem;
   padding: 0.25rem;
   max-width: 200px;
-
-  .value-readout {
-    min-width: 3ch;
-  }
 }
 
 .working-image {
